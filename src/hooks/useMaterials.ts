@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { processDocument } from '@/lib/processDocument';
 
 interface StudyMaterial {
   id: string;
@@ -27,7 +28,7 @@ interface UploadMaterialInput {
 export const useMaterials = (classId: string | undefined) => {
   const { user } = useAuth();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['materials', classId],
     queryFn: async () => {
       if (!user || !classId) throw new Error('Invalid parameters');
@@ -43,7 +44,16 @@ export const useMaterials = (classId: string | undefined) => {
       return data as StudyMaterial[];
     },
     enabled: !!user && !!classId,
+    // Poll every 3 seconds while any materials are processing
+    refetchInterval: (data) => {
+      const hasProcessing = data?.some(
+        (m) => m.processing_status === 'pending' || m.processing_status === 'processing'
+      );
+      return hasProcessing ? 3000 : false;
+    },
   });
+
+  return query;
 };
 
 // Upload a new material
@@ -111,26 +121,17 @@ export const useUploadMaterial = () => {
         throw dbError;
       }
 
-      // Trigger Edge Function to process document
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({ materialId: data.id }),
-          }
-        );
-
-        if (!response.ok) {
-          console.error('Failed to trigger document processing');
-        }
-      } catch (error) {
-        console.error('Error triggering document processing:', error);
-      }
+      // Process document and generate questions (async, non-blocking)
+      processDocument(data.id)
+        .then(() => {
+          console.log('Document processed successfully');
+          // Invalidate queries to refresh UI
+          queryClient.invalidateQueries({ queryKey: ['questions', data.class_id] });
+          queryClient.invalidateQueries({ queryKey: ['materials', data.class_id] });
+        })
+        .catch((error) => {
+          console.error('Error processing document:', error);
+        });
 
       return data as StudyMaterial;
     },

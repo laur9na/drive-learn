@@ -29,8 +29,14 @@ const getStatusInfo = (status: string) => {
   switch (status) {
     case 'pending':
       return {
+        icon: <Loader2 className="w-4 h-4 animate-spin text-blue-600" />,
+        text: 'Queued',
+        color: 'text-blue-600',
+      };
+    case 'processing':
+      return {
         icon: <Loader2 className="w-4 h-4 animate-spin text-yellow-600" />,
-        text: 'Processing...',
+        text: 'Generating questions...',
         color: 'text-yellow-600',
       };
     case 'completed':
