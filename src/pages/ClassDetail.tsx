@@ -116,9 +116,10 @@ export default function ClassDetail() {
                 size="lg"
                 className="bg-orchid-gradient hover:opacity-90 shadow-lg"
                 onClick={() => navigate(`/commute/${classId}`)}
+                disabled={!questions || questions.length === 0}
               >
                 <Play className="mr-2 h-5 w-5" />
-                Start Session
+                Start Learning
               </Button>
             </div>
           </div>
@@ -195,6 +196,30 @@ export default function ClassDetail() {
           <TabsContent value="materials" className="mt-6 space-y-6">
             {/* File Upload */}
             {classId && <FileUpload classId={classId} />}
+
+            {/* Start Learning CTA */}
+            {questions && questions.length > 0 && (
+              <Card className="border-2 border-primary bg-gradient-to-br from-primary/5 to-transparent">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">Ready to Learn!</h3>
+                      <p className="text-muted-foreground">
+                        {questions.length} questions generated from your materials
+                      </p>
+                    </div>
+                    <Button
+                      size="lg"
+                      className="bg-orchid-gradient hover:opacity-90 shadow-lg"
+                      onClick={() => navigate(`/commute/${classId}`)}
+                    >
+                      <Play className="mr-2 h-5 w-5" />
+                      Start Learning
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Materials List */}
             {materialsLoading ? (
