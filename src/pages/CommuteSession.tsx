@@ -1,45 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, Volume2, Play, Pause, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Mic, Volume2, Play, Pause, CheckCircle2, XCircle, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useClass } from '@/hooks/useClasses';
+import { useQuestions } from '@/hooks/useQuestions';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-
-// Sample questions - in real app, these would come from the database
-const SAMPLE_QUESTIONS = [
-  {
-    id: '1',
-    question: 'What is the primary benefit of DriveLearn?',
-    options: [
-      'Turn commute time into study time',
-      'Replace traditional classrooms',
-      'Provide free education',
-      'Sell online courses',
-    ],
-    correctAnswer: 'Turn commute time into study time',
-    explanation: 'DriveLearn helps you make productive use of commute time by enabling hands-free learning.',
-  },
-  {
-    id: '2',
-    question: 'What makes DriveLearn voice-first?',
-    options: [
-      'It only works with voice commands',
-      'Questions are read aloud and answered by voice',
-      'It has a voice assistant',
-      'It records your voice',
-    ],
-    correctAnswer: 'Questions are read aloud and answered by voice',
-    explanation: 'DriveLearn is designed for hands-free operation - questions are spoken and you answer by voice.',
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CommuteSession() {
   const { classId } = useParams<{ classId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: classData } = useClass(classId);
+  const { data: questions, isLoading: questionsLoading } = useQuestions(classId);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -48,6 +25,8 @@ export default function CommuteSession() {
   const [answered, setAnswered] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(15 * 60); // 15 minutes in seconds
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionResponses, setSessionResponses] = useState<any[]>([]);
 
   const { isSpeaking, speak, stop } = useTextToSpeech();
   const {
@@ -60,9 +39,18 @@ export default function CommuteSession() {
     isSupported: isSTTSupported,
   } = useSpeechRecognition();
 
-  const currentQuestion = SAMPLE_QUESTIONS[currentQuestionIndex];
-  const isQuizComplete = currentQuestionIndex === SAMPLE_QUESTIONS.length - 1 && answered;
-  const percentage = Math.round((score / SAMPLE_QUESTIONS.length) * 100);
+  // Use real questions from database, with formatted options
+  const questionsList = (questions || []).map(q => ({
+    id: q.id,
+    question: q.question_text,
+    options: q.options,
+    correctAnswer: q.correct_answer,
+    explanation: q.explanation || '',
+  }));
+
+  const currentQuestion = questionsList[currentQuestionIndex];
+  const isQuizComplete = questionsList.length > 0 && currentQuestionIndex === questionsList.length - 1 && answered;
+  const percentage = questionsList.length > 0 ? Math.round((score / questionsList.length) * 100) : 0;
 
   // Timer countdown
   useEffect(() => {
@@ -92,13 +80,33 @@ export default function CommuteSession() {
     }
   }, [currentQuestionIndex, sessionStarted, answered]);
 
-  const handleStartSession = () => {
+  const handleStartSession = async () => {
+    if (!user || !classId) return;
+
+    // Create session in database
+    const { data: session, error } = await supabase
+      .from('commute_sessions')
+      .insert({
+        user_id: user.id,
+        class_id: classId,
+        duration_minutes: 15,
+        started_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create session:', error);
+      return;
+    }
+
+    setSessionId(session.id);
     setSessionStarted(true);
     speak('Session started. Listen carefully to each question and answer by voice when ready.');
   };
 
-  const handleSelectAnswer = (answer: string) => {
-    if (answered) return;
+  const handleSelectAnswer = async (answer: string) => {
+    if (answered || !currentQuestion) return;
 
     setSelectedAnswer(answer);
     setAnswered(true);
@@ -111,6 +119,21 @@ export default function CommuteSession() {
     } else {
       setFeedback(`Incorrect. The correct answer is ${currentQuestion.correctAnswer}.`);
       speak(`Incorrect. The correct answer is ${currentQuestion.correctAnswer}. ${currentQuestion.explanation}`);
+    }
+
+    // Save response to database
+    if (sessionId && user) {
+      const response = {
+        session_id: sessionId,
+        question_id: currentQuestion.id,
+        user_answer: answer,
+        is_correct: isCorrect,
+        answered_at: new Date().toISOString(),
+      };
+
+      setSessionResponses([...sessionResponses, response]);
+
+      await supabase.from('session_responses').insert(response);
     }
   };
 
@@ -172,14 +195,27 @@ export default function CommuteSession() {
     return matchingWords / Math.max(words1.length, words2.length);
   };
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < SAMPLE_QUESTIONS.length - 1) {
+  const handleNextQuestion = async () => {
+    if (currentQuestionIndex < questionsList.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);
       setFeedback(null);
       setAnswered(false);
       resetTranscript();
       stop();
+    } else {
+      // Session complete - save final results
+      if (sessionId) {
+        await supabase
+          .from('commute_sessions')
+          .update({
+            ended_at: new Date().toISOString(),
+            questions_answered: questionsList.length,
+            questions_correct: score,
+            completed: true,
+          })
+          .eq('id', sessionId);
+      }
     }
   };
 
@@ -188,6 +224,41 @@ export default function CommuteSession() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Loading state
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No questions available
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center p-4">
+        <Card className="max-w-2xl w-full">
+          <CardContent className="py-12 text-center">
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Brain className="w-12 h-12 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">No Questions Available</h2>
+            <p className="text-muted-foreground mb-6">
+              Upload study materials to generate quiz questions for this class.
+            </p>
+            <Button onClick={() => navigate(`/classes/${classId}`)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Class
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!sessionStarted) {
     return (
@@ -227,7 +298,7 @@ export default function CommuteSession() {
                 </div>
                 <div className="bg-primary/5 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Questions</p>
-                  <p className="text-2xl font-bold text-primary">{SAMPLE_QUESTIONS.length}</p>
+                  <p className="text-2xl font-bold text-primary">{questionsList.length}</p>
                 </div>
               </div>
 
@@ -256,7 +327,7 @@ export default function CommuteSession() {
                 <CheckCircle2 className="w-12 h-12 text-green-600" />
               </div>
               <h2 className="text-3xl font-bold mb-2">Session Complete!</h2>
-              <p className="text-4xl font-bold text-primary mb-4">{score}/{SAMPLE_QUESTIONS.length}</p>
+              <p className="text-4xl font-bold text-primary mb-4">{score}/{questionsList.length}</p>
               <p className="text-lg text-muted-foreground mb-8">{percentage}% Correct</p>
 
               <div className="bg-primary/5 rounded-lg p-6 mb-8">
@@ -304,8 +375,8 @@ export default function CommuteSession() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <p className="text-sm text-muted-foreground">Question {currentQuestionIndex + 1}/{SAMPLE_QUESTIONS.length}</p>
-              <Progress value={((currentQuestionIndex + 1) / SAMPLE_QUESTIONS.length) * 100} className="h-2 w-48 mt-1" />
+              <p className="text-sm text-muted-foreground">Question {currentQuestionIndex + 1}/{questionsList.length}</p>
+              <Progress value={((currentQuestionIndex + 1) / questionsList.length) * 100} className="h-2 w-48 mt-1" />
             </div>
           </div>
           <div className="text-right">
@@ -407,7 +478,7 @@ export default function CommuteSession() {
                 className="w-full bg-orchid-gradient hover:opacity-90"
                 size="lg"
               >
-                {currentQuestionIndex < SAMPLE_QUESTIONS.length - 1 ? 'Next Question' : 'Finish Session'}
+                {currentQuestionIndex < questionsList.length - 1 ? 'Next Question' : 'Finish Session'}
               </Button>
             )}
           </CardContent>

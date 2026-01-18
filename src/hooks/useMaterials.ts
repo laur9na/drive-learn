@@ -111,13 +111,35 @@ export const useUploadMaterial = () => {
         throw dbError;
       }
 
+      // Trigger Edge Function to process document
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ materialId: data.id }),
+          }
+        );
+
+        if (!response.ok) {
+          console.error('Failed to trigger document processing');
+        }
+      } catch (error) {
+        console.error('Error triggering document processing:', error);
+      }
+
       return data as StudyMaterial;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['materials', data.class_id] });
+      queryClient.invalidateQueries({ queryKey: ['questions', data.class_id] });
       toast({
         title: 'File uploaded',
-        description: 'Your study material has been uploaded successfully.',
+        description: 'Your study material is being processed. Questions will be generated soon.',
       });
     },
     onError: (error: Error) => {

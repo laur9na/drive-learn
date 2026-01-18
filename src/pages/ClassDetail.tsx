@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClass } from '@/hooks/useClasses';
 import { useMaterials } from '@/hooks/useMaterials';
+import { useQuestions } from '@/hooks/useQuestions';
+import { useClassAccuracy, useSessions } from '@/hooks/useSessions';
 import { FileUpload } from '@/components/materials/FileUpload';
 import { MaterialCard } from '@/components/materials/MaterialCard';
 
@@ -13,6 +15,9 @@ export default function ClassDetail() {
   const navigate = useNavigate();
   const { data: classData, isLoading } = useClass(classId);
   const { data: materials, isLoading: materialsLoading } = useMaterials(classId);
+  const { data: questions } = useQuestions(classId);
+  const { data: sessions } = useSessions(classId);
+  const accuracy = useClassAccuracy(classId);
 
   if (isLoading) {
     return (
@@ -116,9 +121,13 @@ export default function ClassDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">0</div>
+              <div className="text-3xl font-bold text-foreground">
+                {questions?.length || 0}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Upload materials to generate questions
+                {questions?.length === 0
+                  ? 'Upload materials to generate questions'
+                  : `Question${questions?.length === 1 ? '' : 's'} ready`}
               </p>
             </CardContent>
           </Card>
@@ -131,9 +140,13 @@ export default function ClassDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">-</div>
+              <div className="text-3xl font-bold text-foreground">
+                {accuracy !== null ? `${accuracy}%` : '-'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Complete sessions to see stats
+                {accuracy !== null
+                  ? 'Overall performance'
+                  : 'Complete sessions to see stats'}
               </p>
             </CardContent>
           </Card>
@@ -182,37 +195,175 @@ export default function ClassDetail() {
           </TabsContent>
 
           <TabsContent value="questions" className="mt-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Brain className="w-12 h-12 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">No questions yet</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Questions will appear here after you upload study materials.
-                    AI will generate custom quiz questions based on your content.
-                  </p>
+            {questions && questions.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground">
+                    Generated Questions ({questions.length})
+                  </h3>
                 </div>
-              </CardContent>
-            </Card>
+                {questions.map((question, index) => (
+                  <Card key={question.id}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                        Question {index + 1}: {question.question_text}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2">
+                        {question.options.map((option, optIndex) => {
+                          const isCorrect = option === question.correct_answer;
+                          return (
+                            <div
+                              key={optIndex}
+                              className={`p-3 rounded-lg border ${
+                                isCorrect
+                                  ? 'bg-green-50 border-green-200'
+                                  : 'bg-muted/30 border-muted'
+                              }`}
+                            >
+                              <span className="font-medium mr-2">
+                                {String.fromCharCode(65 + optIndex)}.
+                              </span>
+                              <span>{option}</span>
+                              {isCorrect && (
+                                <span className="ml-2 text-green-600 text-sm font-medium">
+                                  ✓ Correct
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {question.explanation && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                          <p className="text-sm font-medium text-blue-900 mb-1">
+                            Explanation:
+                          </p>
+                          <p className="text-sm text-blue-800">{question.explanation}</p>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
+                        <span className="capitalize">
+                          Difficulty: {question.difficulty}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Brain className="w-12 h-12 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">No questions yet</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Questions will appear here after you upload study materials.
+                      AI will generate custom quiz questions based on your content.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="sessions" className="mt-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Play className="w-12 h-12 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">No sessions yet</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Your commute learning sessions will appear here with stats
-                    and progress tracking.
-                  </p>
+            {sessions && sessions.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground">
+                    Session History ({sessions.length})
+                  </h3>
                 </div>
-              </CardContent>
-            </Card>
+                {sessions.map((session) => {
+                  const percentage = session.questions_answered > 0
+                    ? Math.round((session.questions_correct / session.questions_answered) * 100)
+                    : 0;
+                  const sessionDate = new Date(session.started_at);
+
+                  return (
+                    <Card key={session.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                percentage >= 80 ? 'bg-green-100' :
+                                percentage >= 60 ? 'bg-yellow-100' : 'bg-red-100'
+                              }`}>
+                                <span className="text-xl font-bold">
+                                  {percentage}%
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  {sessionDate.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {sessionDate.toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 mt-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Questions</p>
+                                <p className="text-lg font-semibold">
+                                  {session.questions_answered}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Correct</p>
+                                <p className="text-lg font-semibold text-green-600">
+                                  {session.questions_correct}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Duration</p>
+                                <p className="text-lg font-semibold">
+                                  {session.duration_minutes} min
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          {session.completed && (
+                            <div className="ml-4">
+                              <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                                Completed
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Play className="w-12 h-12 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">No sessions yet</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Your commute learning sessions will appear here with stats
+                      and progress tracking.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
