@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Lesson from "./pages/Lesson";
 import Quiz from "./pages/Quiz";
 import NotFound from "./pages/NotFound";
+import { DrivingQuizDemo } from "./components/DrivingQuizDemo";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Welcome />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/demo" element={<DrivingQuizDemo />} />
             <Route
               path="/dashboard"
               element={

@@ -58,6 +58,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      backgroundImage: {
+        'orchid-gradient': 'linear-gradient(135deg, #DA70D6 0%, #FFB6D9 100%)',
+        'orchid-subtle': 'linear-gradient(135deg, #F8E8F8 0%, #FFE8F5 100%)',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
