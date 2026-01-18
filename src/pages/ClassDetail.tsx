@@ -14,12 +14,15 @@ import { MaterialCard } from '@/components/materials/MaterialCard';
 export default function ClassDetail() {
   const { classId } = useParams<{ classId: string }>();
   const navigate = useNavigate();
-  const { data: classData, isLoading } = useClass(classId);
+  const { data: classData, isLoading, error } = useClass(classId);
   const { data: materials, isLoading: materialsLoading } = useMaterials(classId);
   const { data: questions } = useQuestions(classId);
   const { data: sessions } = useSessions(classId);
   const accuracy = useClassAccuracy(classId);
   const deleteClass = useDeleteClass();
+
+  // Log for debugging
+  console.log('[ClassDetail] State:', { classId, isLoading, hasData: !!classData, error });
 
   if (isLoading) {
     return (
@@ -27,6 +30,28 @@ export default function ClassDetail() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading class...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-2 text-destructive">Error Loading Class</h2>
+          <p className="text-muted-foreground mb-6">
+            {error instanceof Error ? error.message : 'An error occurred while loading the class. You may not be signed in.'}
+          </p>
+          <div className="space-y-2">
+            <Button onClick={() => navigate('/classes')} className="w-full">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Classes
+            </Button>
+            <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
+              Sign In
+            </Button>
+          </div>
         </div>
       </div>
     );

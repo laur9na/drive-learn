@@ -16,6 +16,7 @@ import ClassDetail from "./pages/ClassDetail";
 import CommuteSession from "./pages/CommuteSession";
 import NotFound from "./pages/NotFound";
 import { DrivingQuizDemo } from "./components/DrivingQuizDemo";
+import '@/lib/checkAuth';
 
 const queryClient = new QueryClient();
 
