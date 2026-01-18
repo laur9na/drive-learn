@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Setup from "./pages/Setup";
 import Dashboard from "./pages/Dashboard";
 import Lesson from "./pages/Lesson";
 import Quiz from "./pages/Quiz";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/" element={<Welcome />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/setup" element={<Setup />} />
             <Route path="/demo" element={<DrivingQuizDemo />} />
             <Route
               path="/dashboard"
