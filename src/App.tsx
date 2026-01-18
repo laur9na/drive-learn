@@ -13,6 +13,7 @@ import Lesson from "./pages/Lesson";
 import Quiz from "./pages/Quiz";
 import Classes from "./pages/Classes";
 import ClassDetail from "./pages/ClassDetail";
+import CommuteSession from "./pages/CommuteSession";
 import NotFound from "./pages/NotFound";
 import { DrivingQuizDemo } from "./components/DrivingQuizDemo";
 
@@ -67,6 +68,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ClassDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/commute/:classId"
+              element={
+                <ProtectedRoute>
+                  <CommuteSession />
                 </ProtectedRoute>
               }
             />
