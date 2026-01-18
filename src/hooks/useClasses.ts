@@ -32,15 +32,23 @@ export const useClasses = () => {
   return useQuery({
     queryKey: ['classes', user?.id],
     queryFn: async () => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user) {
+        console.log('[Classes Debug] No user found');
+        throw new Error('Not authenticated');
+      }
 
+      console.log('[Classes Debug] Fetching classes for user:', user.id);
       const { data, error } = await supabase
         .from('classes')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Classes Debug] Error fetching classes:', error);
+        throw error;
+      }
+      console.log('[Classes Debug] Classes fetched:', data?.length || 0);
       return data as Class[];
     },
     enabled: !!user,
