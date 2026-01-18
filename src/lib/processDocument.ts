@@ -56,23 +56,23 @@ export async function processDocument(materialId: string): Promise<void> {
 
     console.log(`Extracted text length: ${extractedText.length} characters`);
 
-    // Generate questions using Claude API
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    // Generate questions using OpenAI API
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
-    if (!apiKey || apiKey === 'your-anthropic-api-key-here') {
-      throw new Error('Anthropic API key not configured');
+    if (!apiKey || apiKey === 'your-openai-api-key-here') {
+      throw new Error('OpenAI API key not configured');
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'gpt-5.1',
         max_tokens: 4096,
+        temperature: 0.7,
         messages: [
           {
             role: 'user',
@@ -105,25 +105,25 @@ ${extractedText.slice(0, 15000)}`,
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
-    const claudeResponse = await response.json();
-    const content = claudeResponse.content[0].text;
+    const openaiResponse = await response.json();
+    const content = openaiResponse.choices[0].message.content;
 
-    console.log('Claude response received');
+    console.log('OpenAI response received');
 
-    // Parse questions from Claude response
+    // Parse questions from OpenAI response
     let questions: GeneratedQuestion[];
     try {
-      // Extract JSON from response (Claude might wrap it in markdown)
+      // Extract JSON from response (GPT might wrap it in markdown)
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
         throw new Error('No JSON array found in response');
       }
       questions = JSON.parse(jsonMatch[0]);
     } catch (parseError: any) {
-      console.error('Failed to parse Claude response:', content);
+      console.error('Failed to parse OpenAI response:', content);
       throw new Error(`Failed to parse questions: ${parseError.message}`);
     }
 
