@@ -121,6 +121,7 @@ export default function ClassDetail() {
                 Start Session
               </Button>
             </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -397,28 +398,6 @@ export default function ClassDetail() {
             )}
           </TabsContent>
         </Tabs>
-
-        {/* Quick Actions */}
-        <div className="mt-8 p-6 bg-white/60 backdrop-blur-sm rounded-lg border-2 border-primary/10">
-          <h3 className="font-bold text-lg mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link to="/demo" className="block">
-              <Button variant="outline" className="w-full justify-start" size="lg">
-                <Play className="mr-2 h-5 w-5" />
-                Try Voice Quiz Demo
-              </Button>
-            </Link>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              size="lg"
-              disabled
-            >
-              <Upload className="mr-2 h-5 w-5" />
-              Upload Study Materials (Coming Soon)
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
