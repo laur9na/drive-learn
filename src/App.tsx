@@ -11,6 +11,8 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Lesson from "./pages/Lesson";
 import Quiz from "./pages/Quiz";
+import Classes from "./pages/Classes";
+import ClassDetail from "./pages/ClassDetail";
 import NotFound from "./pages/NotFound";
 import { DrivingQuizDemo } from "./components/DrivingQuizDemo";
 
@@ -49,6 +51,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Quiz />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/classes"
+              element={
+                <ProtectedRoute>
+                  <Classes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/classes/:classId"
+              element={
+                <ProtectedRoute>
+                  <ClassDetail />
                 </ProtectedRoute>
               }
             />

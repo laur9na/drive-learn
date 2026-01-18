@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Car, BookOpen, Trophy, LogOut, Play, ChevronRight } from 'lucide-react';
+import { Car, BookOpen, Trophy, LogOut, Play, ChevronRight, GraduationCap } from 'lucide-react';
 
 interface Lesson {
   id: string;
@@ -146,6 +146,35 @@ export default function Dashboard() {
                   <p className="text-sm font-bold text-primary">{progressPercentage}%</p>
                 </div>
                 <Progress value={progressPercentage} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* My Classes Section */}
+        <div className="mb-8">
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-orchid-gradient rounded-xl flex items-center justify-center">
+                    <GraduationCap className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">My Classes</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Organize study materials and learn during your commute
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => navigate('/classes')}
+                  className="bg-orchid-gradient hover:opacity-90"
+                  size="lg"
+                >
+                  View Classes
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
               </div>
             </CardContent>
           </Card>
