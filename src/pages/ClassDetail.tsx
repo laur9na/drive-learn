@@ -1,9 +1,10 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Play, FileText, Brain, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Upload, Play, FileText, Brain, BarChart3, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useClass } from '@/hooks/useClasses';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useClass, useDeleteClass } from '@/hooks/useClasses';
 import { useMaterials } from '@/hooks/useMaterials';
 import { useQuestions } from '@/hooks/useQuestions';
 import { useClassAccuracy, useSessions } from '@/hooks/useSessions';
@@ -18,6 +19,7 @@ export default function ClassDetail() {
   const { data: questions } = useQuestions(classId);
   const { data: sessions } = useSessions(classId);
   const accuracy = useClassAccuracy(classId);
+  const deleteClass = useDeleteClass();
 
   if (isLoading) {
     return (
@@ -81,15 +83,44 @@ export default function ClassDetail() {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              className="bg-orchid-gradient hover:opacity-90 shadow-lg"
-              onClick={() => navigate(`/commute/${classId}`)}
-            >
-              <Play className="mr-2 h-5 w-5" />
-              Start Session
-            </Button>
-          </div>
+            <div className="flex gap-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="lg">
+                    <Trash2 className="mr-2 h-5 w-5" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Class</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{classData?.name}"? This will delete all materials, questions, and sessions for this class. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        deleteClass.mutate(classId!);
+                        navigate('/classes');
+                      }}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                size="lg"
+                className="bg-orchid-gradient hover:opacity-90 shadow-lg"
+                onClick={() => navigate(`/commute/${classId}`)}
+              >
+                <Play className="mr-2 h-5 w-5" />
+                Start Session
+              </Button>
+            </div>
         </div>
 
         {/* Stats Cards */}

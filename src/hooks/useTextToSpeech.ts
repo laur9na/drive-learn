@@ -4,7 +4,7 @@ export const useTextToSpeech = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
 
-  const speak = useCallback((text: string, rate = 1, pitch = 1) => {
+  const speak = useCallback((text: string, rate = 1, pitch = 1, onEnd?: () => void) => {
     if (!('speechSynthesis' in window)) {
       console.error('Speech Synthesis API not supported');
       setIsSupported(false);
@@ -20,7 +20,10 @@ export const useTextToSpeech = () => {
     utterance.volume = 1;
 
     utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      if (onEnd) onEnd();
+    };
     utterance.onerror = () => setIsSpeaking(false);
 
     window.speechSynthesis.speak(utterance);

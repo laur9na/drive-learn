@@ -24,7 +24,8 @@ export default function CommuteSession() {
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(15 * 60); // 15 minutes in seconds
+  const [duration, setDuration] = useState(15); // Duration in minutes
+  const [timeRemaining, setTimeRemaining] = useState(15 * 60); // Will be set to duration * 60 on session start
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionResponses, setSessionResponses] = useState<any[]>([]);
 
@@ -69,19 +70,27 @@ export default function CommuteSession() {
     return () => clearInterval(interval);
   }, [sessionStarted, isQuizComplete]);
 
-  // Auto-read question when it changes
+  // Auto-read question when it changes and auto-start listening
   useEffect(() => {
     if (sessionStarted && !answered) {
       const timer = setTimeout(() => {
         const questionText = `Question ${currentQuestionIndex + 1}. ${currentQuestion.question}. Your options are: ${currentQuestion.options.map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`).join('. ')}`;
-        speak(questionText);
+        speak(questionText, 1, 1, () => {
+          // Auto-start listening after TTS completes
+          if (isSTTSupported && !answered) {
+            startListening();
+          }
+        });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [currentQuestionIndex, sessionStarted, answered]);
+  }, [currentQuestionIndex, sessionStarted, answered, speak, isSTTSupported, startListening]);
 
   const handleStartSession = async () => {
     if (!user || !classId) return;
+
+    // Set timer based on selected duration
+    setTimeRemaining(duration * 60);
 
     // Create session in database
     const { data: session, error } = await supabase
@@ -89,7 +98,7 @@ export default function CommuteSession() {
       .insert({
         user_id: user.id,
         class_id: classId,
-        duration_minutes: 15,
+        duration_minutes: duration,
         started_at: new Date().toISOString(),
       })
       .select()
@@ -291,10 +300,27 @@ export default function CommuteSession() {
                 </p>
               </div>
 
+              {/* Duration Picker */}
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground mb-3">Set Commute Time</p>
+                <div className="flex gap-2 justify-center flex-wrap">
+                  {[5, 10, 15, 20, 30].map((mins) => (
+                    <Button
+                      key={mins}
+                      variant={duration === mins ? "default" : "outline"}
+                      className={duration === mins ? "bg-orchid-gradient" : ""}
+                      onClick={() => setDuration(mins)}
+                    >
+                      {mins} min
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4 text-left mb-6">
                 <div className="bg-primary/5 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Duration</p>
-                  <p className="text-2xl font-bold text-primary">15 min</p>
+                  <p className="text-2xl font-bold text-primary">{duration} min</p>
                 </div>
                 <div className="bg-primary/5 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">Questions</p>
@@ -332,7 +358,7 @@ export default function CommuteSession() {
 
               <div className="bg-primary/5 rounded-lg p-6 mb-8">
                 <p className="text-sm text-muted-foreground mb-2">Time Used</p>
-                <p className="text-2xl font-bold">{formatTime(15 * 60 - timeRemaining)}</p>
+                <p className="text-2xl font-bold">{formatTime(duration * 60 - timeRemaining)}</p>
               </div>
 
               <div className="flex gap-4">
