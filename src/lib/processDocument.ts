@@ -76,7 +76,7 @@ export async function processDocument(materialId: string): Promise<void> {
         messages: [
           {
             role: 'user',
-            content: `Generate 10 multiple-choice quiz questions from the following text.
+            content: `Generate 50 multiple-choice quiz questions from the following text.
 
 Format your response as a JSON array with this exact structure:
 [
@@ -93,8 +93,9 @@ Make sure:
 1. Each question has exactly 4 options
 2. The correct_answer matches one of the options exactly
 3. Questions test understanding, not just memorization
-4. Vary the difficulty levels
-5. Return ONLY the JSON array, no other text
+4. Cover DIFFERENT topics from the text (don't repeat)
+5. Vary the difficulty levels: 15 easy, 25 medium, 10 hard
+6. Return ONLY the JSON array, no other text
 
 Text to process:
 ${extractedText.slice(0, 15000)}`,

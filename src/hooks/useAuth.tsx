@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[Auth] Initial session:', session ? 'authenticated' : 'not authenticated');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -29,7 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] State changed:', event, session ? 'authenticated' : 'not authenticated');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -49,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: window.location.origin,
       },
     });
-    console.log('[Auth] Sign up result:', { data, error });
     return { error };
   };
 
@@ -57,11 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
-    console.log('[Auth] Sign in result:', {
-      user: data?.user?.id,
-      session: !!data?.session,
-      error
     });
     return { error };
   };

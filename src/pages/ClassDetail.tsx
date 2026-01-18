@@ -21,9 +21,6 @@ export default function ClassDetail() {
   const accuracy = useClassAccuracy(classId);
   const deleteClass = useDeleteClass();
 
-  // Log for debugging
-  console.log('[ClassDetail] State:', { classId, isLoading, hasData: !!classData, error });
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center">

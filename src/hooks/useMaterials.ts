@@ -124,13 +124,12 @@ export const useUploadMaterial = () => {
       // Process document and generate questions (async, non-blocking)
       processDocument(data.id)
         .then(() => {
-          console.log('Document processed successfully');
           // Invalidate queries to refresh UI
           queryClient.invalidateQueries({ queryKey: ['questions', data.class_id] });
           queryClient.invalidateQueries({ queryKey: ['materials', data.class_id] });
         })
-        .catch((error) => {
-          console.error('Error processing document:', error);
+        .catch(() => {
+          // Error will be reflected in processing_status
         });
 
       return data as StudyMaterial;

@@ -8,16 +8,10 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Setup from "./pages/Setup";
-import Dashboard from "./pages/Dashboard";
-import Lesson from "./pages/Lesson";
-import Quiz from "./pages/Quiz";
 import Classes from "./pages/Classes";
 import ClassDetail from "./pages/ClassDetail";
 import CommuteSession from "./pages/CommuteSession";
 import NotFound from "./pages/NotFound";
-import { DrivingQuizDemo } from "./components/DrivingQuizDemo";
-import '@/lib/checkAuth';
 
 const queryClient = new QueryClient();
 
@@ -32,32 +26,6 @@ const App = () => (
             <Route path="/" element={<Welcome />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/setup" element={<Setup />} />
-            <Route path="/demo" element={<DrivingQuizDemo />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/lesson/:id"
-              element={
-                <ProtectedRoute>
-                  <Lesson />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/quiz/:id"
-              element={
-                <ProtectedRoute>
-                  <Quiz />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/classes"
               element={
@@ -82,7 +50,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

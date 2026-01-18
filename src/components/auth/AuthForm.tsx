@@ -33,7 +33,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           title: 'Account created!',
           description: 'Welcome to DriveLearn. Start your learning journey!',
         });
-        navigate('/dashboard');
+        navigate('/classes');
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
@@ -41,7 +41,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           title: 'Welcome back!',
           description: 'Continue your learning journey.',
         });
-        navigate('/dashboard');
+        navigate('/classes');
       }
     } catch (error: any) {
       toast({

@@ -10,6 +10,7 @@ import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { askAI, isHelpRequest } from '@/lib/conversationalAI';
 
 export default function CommuteSession() {
   const { classId } = useParams<{ classId: string }>();
@@ -24,10 +25,12 @@ export default function CommuteSession() {
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(false);
-  const [duration, setDuration] = useState(15); // Duration in minutes
-  const [timeRemaining, setTimeRemaining] = useState(15 * 60); // Will be set to duration * 60 on session start
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionResponses, setSessionResponses] = useState<any[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [helpMode, setHelpMode] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'assistant'; content: string}>>([]);
+  const [aiResponse, setAiResponse] = useState<string>('');
 
   const { isSpeaking, speak, stop } = useTextToSpeech();
   const {
@@ -53,22 +56,7 @@ export default function CommuteSession() {
   const isQuizComplete = questionsList.length > 0 && currentQuestionIndex === questionsList.length - 1 && answered;
   const percentage = questionsList.length > 0 ? Math.round((score / questionsList.length) * 100) : 0;
 
-  // Timer countdown
-  useEffect(() => {
-    if (!sessionStarted || isQuizComplete) return;
-
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [sessionStarted, isQuizComplete]);
+  // No timer - just keep going until they end it manually
 
   // Auto-read question when it changes and auto-start listening
   useEffect(() => {
@@ -89,8 +77,8 @@ export default function CommuteSession() {
   const handleStartSession = async () => {
     if (!user || !classId) return;
 
-    // Set timer based on selected duration
-    setTimeRemaining(duration * 60);
+    const startTime = new Date();
+    setSessionStartTime(startTime);
 
     // Create session in database
     const { data: session, error } = await supabase
@@ -98,8 +86,8 @@ export default function CommuteSession() {
       .insert({
         user_id: user.id,
         class_id: classId,
-        duration_minutes: duration,
-        started_at: new Date().toISOString(),
+        duration_minutes: 0, // Will update when they end
+        started_at: startTime.toISOString(),
       })
       .select()
       .single();
@@ -146,8 +134,8 @@ export default function CommuteSession() {
     }
   };
 
-  const handleSpeechSubmit = () => {
-    const fullTranscript = (transcript + interimTranscript).toLowerCase().trim();
+  const handleSpeechSubmit = async () => {
+    const fullTranscript = (transcript + interimTranscript).trim();
 
     if (!fullTranscript) {
       setFeedback('No speech detected. Please try again.');
@@ -155,8 +143,69 @@ export default function CommuteSession() {
       return;
     }
 
+    // Check if user is asking for help
+    if (isHelpRequest(fullTranscript)) {
+      setHelpMode(true);
+      setFeedback('Switching to help mode...');
+      speak('Let me help you with that.');
+
+      // Get AI response
+      try {
+        const { answer, searchResults } = await askAI(fullTranscript, {
+          currentTopic: classData?.name,
+          conversationHistory,
+        });
+
+        setAiResponse(answer);
+        setConversationHistory([
+          ...conversationHistory,
+          { role: 'user', content: fullTranscript },
+          { role: 'assistant', content: answer },
+        ]);
+
+        speak(answer);
+
+        if (searchResults && searchResults.length > 0) {
+          console.log('Search results:', searchResults);
+        }
+      } catch (error: any) {
+        setFeedback(`Error: ${error.message}`);
+        speak('Sorry, I encountered an error. Please try again.');
+      }
+
+      resetTranscript();
+      return;
+    }
+
+    // If in help mode and not a new question, continue conversation
+    if (helpMode) {
+      try {
+        const { answer } = await askAI(fullTranscript, {
+          currentTopic: classData?.name,
+          conversationHistory,
+        });
+
+        setAiResponse(answer);
+        setConversationHistory([
+          ...conversationHistory,
+          { role: 'user', content: fullTranscript },
+          { role: 'assistant', content: answer },
+        ]);
+
+        speak(answer);
+        resetTranscript();
+        return;
+      } catch (error: any) {
+        setFeedback(`Error: ${error.message}`);
+        speak('Sorry, I encountered an error.');
+      }
+    }
+
+    // Normal quiz answer mode
+    const lowerTranscript = fullTranscript.toLowerCase();
+
     // Simple matching - check if transcript contains A, B, C, or D
-    const letterMatch = fullTranscript.match(/\b([a-d])\b/i);
+    const letterMatch = lowerTranscript.match(/\b([a-d])\b/i);
     if (letterMatch) {
       const letterIndex = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
       if (letterIndex >= 0 && letterIndex < currentQuestion.options.length) {
@@ -170,7 +219,7 @@ export default function CommuteSession() {
     let highestScore = 0;
 
     currentQuestion.options.forEach((option) => {
-      const similarity = calculateSimilarity(fullTranscript, option);
+      const similarity = calculateSimilarity(lowerTranscript, option);
       if (similarity > highestScore) {
         highestScore = similarity;
         bestMatch = option;
@@ -205,27 +254,46 @@ export default function CommuteSession() {
   };
 
   const handleNextQuestion = async () => {
+    // Reset help mode when moving to next question
+    if (helpMode) {
+      setHelpMode(false);
+      setAiResponse('');
+    }
+
+    // Just keep going - loop back to start if we run out
     if (currentQuestionIndex < questionsList.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer(null);
-      setFeedback(null);
-      setAnswered(false);
-      resetTranscript();
-      stop();
     } else {
-      // Session complete - save final results
-      if (sessionId) {
-        await supabase
-          .from('commute_sessions')
-          .update({
-            ended_at: new Date().toISOString(),
-            questions_answered: questionsList.length,
-            questions_correct: score,
-            completed: true,
-          })
-          .eq('id', sessionId);
-      }
+      // Loop back to beginning
+      setCurrentQuestionIndex(0);
+      speak('Review mode: Starting questions from the beginning');
     }
+
+    setSelectedAnswer(null);
+    setFeedback(null);
+    setAnswered(false);
+    resetTranscript();
+    stop();
+  };
+
+  const handleEndSession = async () => {
+    if (!sessionId || !sessionStartTime) return;
+
+    const endTime = new Date();
+    const durationMinutes = Math.round((endTime.getTime() - sessionStartTime.getTime()) / 60000);
+
+    await supabase
+      .from('commute_sessions')
+      .update({
+        ended_at: endTime.toISOString(),
+        duration_minutes: durationMinutes,
+        questions_answered: currentQuestionIndex + 1,
+        questions_correct: score,
+        completed: true,
+      })
+      .eq('id', sessionId);
+
+    navigate(`/classes/${classId}`);
   };
 
   const formatTime = (seconds: number) => {
@@ -300,32 +368,12 @@ export default function CommuteSession() {
                 </p>
               </div>
 
-              {/* Duration Picker */}
-              <div className="mb-6">
-                <p className="text-sm text-muted-foreground mb-3">Set Commute Time</p>
-                <div className="flex gap-2 justify-center flex-wrap">
-                  {[5, 10, 15, 20, 30].map((mins) => (
-                    <Button
-                      key={mins}
-                      variant={duration === mins ? "default" : "outline"}
-                      className={duration === mins ? "bg-orchid-gradient" : ""}
-                      onClick={() => setDuration(mins)}
-                    >
-                      {mins} min
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-left mb-6">
-                <div className="bg-primary/5 p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Duration</p>
-                  <p className="text-2xl font-bold text-primary">{duration} min</p>
-                </div>
-                <div className="bg-primary/5 p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Questions</p>
-                  <p className="text-2xl font-bold text-primary">{questionsList.length}</p>
-                </div>
+              <div className="bg-primary/5 p-6 rounded-lg mb-6">
+                <p className="text-sm text-muted-foreground mb-1">Available Questions</p>
+                <p className="text-4xl font-bold text-primary">{questionsList.length}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Questions will loop indefinitely until you end the session
+                </p>
               </div>
 
               <Button
@@ -405,10 +453,14 @@ export default function CommuteSession() {
               <Progress value={((currentQuestionIndex + 1) / questionsList.length) * 100} className="h-2 w-48 mt-1" />
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold text-primary">{formatTime(timeRemaining)}</p>
-            <p className="text-xs text-muted-foreground">Time Remaining</p>
-          </div>
+          <Button
+            onClick={handleEndSession}
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive hover:bg-destructive hover:text-white"
+          >
+            End Session
+          </Button>
         </div>
 
         {/* Question Card */}
@@ -504,7 +556,7 @@ export default function CommuteSession() {
                 className="w-full bg-orchid-gradient hover:opacity-90"
                 size="lg"
               >
-                {currentQuestionIndex < questionsList.length - 1 ? 'Next Question' : 'Finish Session'}
+                Next Question
               </Button>
             )}
           </CardContent>
