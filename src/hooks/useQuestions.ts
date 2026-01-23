@@ -25,7 +25,7 @@ export const useQuestions = (classId: string | undefined) => {
     queryFn: async () => {
       if (!user || !classId) throw new Error('Invalid parameters');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('generated_questions')
         .select('*')
         .eq('class_id', classId)
