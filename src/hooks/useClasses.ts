@@ -38,7 +38,7 @@ export const useClasses = () => {
       }
 
       console.log('[Classes Debug] Fetching classes for user:', user.id);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .select('*')
         .eq('user_id', user.id)
@@ -64,7 +64,7 @@ export const useClass = (classId: string | undefined) => {
     queryFn: async () => {
       if (!user || !classId) throw new Error('Invalid parameters');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .select('*')
         .eq('id', classId)
@@ -88,7 +88,7 @@ export const useCreateClass = () => {
     mutationFn: async (input: CreateClassInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .insert({
           user_id: user.id,
@@ -126,7 +126,7 @@ export const useUpdateClass = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...input }: UpdateClassInput & { id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('classes')
         .update(input)
         .eq('id', id)
@@ -161,7 +161,7 @@ export const useDeleteClass = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('classes').delete().eq('id', id);
+      const { error } = await (supabase as any).from('classes').delete().eq('id', id);
 
       if (error) throw error;
       return id;

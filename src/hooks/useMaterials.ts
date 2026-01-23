@@ -33,7 +33,7 @@ export const useMaterials = (classId: string | undefined) => {
     queryFn: async () => {
       if (!user || !classId) throw new Error('Invalid parameters');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('study_materials')
         .select('*')
         .eq('class_id', classId)
@@ -45,8 +45,9 @@ export const useMaterials = (classId: string | undefined) => {
     },
     enabled: !!user && !!classId,
     // Poll every 3 seconds while any materials are processing
-    refetchInterval: (data) => {
-      const hasProcessing = data?.some(
+    refetchInterval: (query) => {
+      const materials = query.state.data as StudyMaterial[] | undefined;
+      const hasProcessing = materials?.some(
         (m) => m.processing_status === 'pending' || m.processing_status === 'processing'
       );
       return hasProcessing ? 3000 : false;
@@ -101,7 +102,7 @@ export const useUploadMaterial = () => {
       if (uploadError) throw uploadError;
 
       // Create database record
-      const { data, error: dbError } = await supabase
+      const { data, error: dbError } = await (supabase as any)
         .from('study_materials')
         .insert({
           class_id: classId,
@@ -167,7 +168,7 @@ export const useDeleteMaterial = () => {
       if (storageError) throw storageError;
 
       // Delete database record
-      const { error: dbError } = await supabase
+      const { error: dbError } = await (supabase as any)
         .from('study_materials')
         .delete()
         .eq('id', material.id);

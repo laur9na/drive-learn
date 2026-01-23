@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 
+interface StudyMaterial {
+  id: string;
+  class_id: string;
+  user_id: string;
+  file_path: string;
+  file_type: string;
+}
+
 interface GeneratedQuestion {
   question_text: string;
   options: string[];
@@ -11,7 +19,7 @@ interface GeneratedQuestion {
 export async function processDocument(materialId: string): Promise<void> {
   try {
     // Get material details
-    const { data: material, error: materialError } = await supabase
+    const { data: material, error: materialError } = await (supabase as any)
       .from('study_materials')
       .select('*')
       .eq('id', materialId)
@@ -21,8 +29,10 @@ export async function processDocument(materialId: string): Promise<void> {
       throw new Error(`Material not found: ${materialError?.message}`);
     }
 
+    const mat = material as StudyMaterial;
+
     // Update status to processing
-    await supabase
+    await (supabase as any)
       .from('study_materials')
       .update({ processing_status: 'processing' })
       .eq('id', materialId);
@@ -30,7 +40,7 @@ export async function processDocument(materialId: string): Promise<void> {
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('study-materials')
-      .download(material.file_path);
+      .download(mat.file_path);
 
     if (downloadError || !fileData) {
       throw new Error(`Failed to download file: ${downloadError?.message}`);
@@ -39,9 +49,9 @@ export async function processDocument(materialId: string): Promise<void> {
     // Extract text based on file type
     let extractedText = '';
 
-    if (material.file_type === 'text/plain' || material.file_type === 'text/markdown') {
+    if (mat.file_type === 'text/plain' || mat.file_type === 'text/markdown') {
       extractedText = await fileData.text();
-    } else if (material.file_type === 'application/pdf') {
+    } else if (mat.file_type === 'application/pdf') {
       // For PDFs, extract as text (basic approach)
       extractedText = await fileData.text();
     } else {
@@ -49,7 +59,7 @@ export async function processDocument(materialId: string): Promise<void> {
     }
 
     // Save extracted text
-    await supabase
+    await (supabase as any)
       .from('study_materials')
       .update({ extracted_text: extractedText })
       .eq('id', materialId);
@@ -132,9 +142,9 @@ ${extractedText.slice(0, 15000)}`,
 
     // Save questions to database
     const questionsToInsert = questions.map((q, index) => ({
-      class_id: material.class_id,
-      study_material_id: material.id,
-      user_id: material.user_id,
+      class_id: mat.class_id,
+      study_material_id: mat.id,
+      user_id: mat.user_id,
       question_text: q.question_text,
       options: q.options,
       correct_answer: q.correct_answer,
@@ -143,7 +153,7 @@ ${extractedText.slice(0, 15000)}`,
       question_order: index,
     }));
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await (supabase as any)
       .from('generated_questions')
       .insert(questionsToInsert);
 
@@ -152,7 +162,7 @@ ${extractedText.slice(0, 15000)}`,
     }
 
     // Update material status to completed
-    await supabase
+    await (supabase as any)
       .from('study_materials')
       .update({
         processing_status: 'completed',
@@ -165,7 +175,7 @@ ${extractedText.slice(0, 15000)}`,
     console.error('Error processing document:', error);
 
     // Update material status to failed
-    await supabase
+    await (supabase as any)
       .from('study_materials')
       .update({
         processing_status: 'failed',

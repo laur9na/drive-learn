@@ -81,7 +81,7 @@ export default function CommuteSession() {
     setSessionStartTime(startTime);
 
     // Create session in database
-    const { data: session, error } = await supabase
+    const { data: session, error } = await (supabase as any)
       .from('commute_sessions')
       .insert({
         user_id: user.id,
@@ -130,7 +130,7 @@ export default function CommuteSession() {
 
       setSessionResponses([...sessionResponses, response]);
 
-      await supabase.from('session_responses').insert(response);
+      await (supabase as any).from('session_responses').insert(response);
     }
   };
 
@@ -282,7 +282,7 @@ export default function CommuteSession() {
     const endTime = new Date();
     const durationMinutes = Math.round((endTime.getTime() - sessionStartTime.getTime()) / 60000);
 
-    await supabase
+    await (supabase as any)
       .from('commute_sessions')
       .update({
         ended_at: endTime.toISOString(),
@@ -405,8 +405,8 @@ export default function CommuteSession() {
               <p className="text-lg text-muted-foreground mb-8">{percentage}% Correct</p>
 
               <div className="bg-primary/5 rounded-lg p-6 mb-8">
-                <p className="text-sm text-muted-foreground mb-2">Time Used</p>
-                <p className="text-2xl font-bold">{formatTime(duration * 60 - timeRemaining)}</p>
+                <p className="text-sm text-muted-foreground mb-2">Questions Answered</p>
+                <p className="text-2xl font-bold">{currentQuestionIndex + 1}</p>
               </div>
 
               <div className="flex gap-4">
