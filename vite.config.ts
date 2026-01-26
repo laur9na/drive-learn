@@ -5,6 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Use relative paths for Electron builds
+  base: process.env.ELECTRON === 'true' ? './' : '/',
   server: {
     host: "::",
     port: 8080,
@@ -16,6 +18,17 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    outDir: 'dist',
+    // Ensure PDF.js worker is bundled
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          pdfjs: ['pdfjs-dist'],
+        },
+      },
     },
   },
 }));

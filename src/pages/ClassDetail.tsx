@@ -1,66 +1,69 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Play, FileText, Brain, BarChart3, Trash2, Clock } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Play, FileText, Brain, BarChart3, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useClass, useDeleteClass } from '@/hooks/useClasses';
 import { useMaterials } from '@/hooks/useMaterials';
 import { useQuestions } from '@/hooks/useQuestions';
-import { useClassAccuracy, useSessions } from '@/hooks/useSessions';
+import { useSessions } from '@/hooks/useSessions';
 import { FileUpload } from '@/components/materials/FileUpload';
 import { MaterialCard } from '@/components/materials/MaterialCard';
 
 export default function ClassDetail() {
   const { classId } = useParams<{ classId: string }>();
   const navigate = useNavigate();
+
   const { data: classData, isLoading, error } = useClass(classId);
-  const { data: materials, isLoading: materialsLoading } = useMaterials(classId);
+  const { data: materials } = useMaterials(classId);
   const { data: questions } = useQuestions(classId);
   const { data: sessions } = useSessions(classId);
-  const accuracy = useClassAccuracy(classId);
   const deleteClass = useDeleteClass();
 
+  // Safe arrays
+  const materialsList = materials ?? [];
+  const questionsList = questions ?? [];
+  const sessionsList = sessions ?? [];
+
+  // Calculate accuracy
+  const completedSessions = sessionsList.filter((s) => s.completed);
+  const totalAnswered = completedSessions.reduce((sum, s) => sum + s.questions_answered, 0);
+  const totalCorrect = completedSessions.reduce((sum, s) => sum + s.questions_correct, 0);
+  const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : null;
+
+  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading class...</p>
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading class...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  // Error state
+  if (error || !classData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <h2 className="text-2xl font-bold mb-2 text-destructive">Error Loading Class</h2>
-          <p className="text-muted-foreground mb-6">
-            {error instanceof Error ? error.message : 'An error occurred while loading the class. You may not be signed in.'}
-          </p>
-          <div className="space-y-2">
-            <Button onClick={() => navigate('/classes')} className="w-full">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Classes
-            </Button>
-            <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
-              Sign In
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!classData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Class not found</h2>
-          <p className="text-muted-foreground mb-6">
-            The class you're looking for doesn't exist.
+          <h2 className="text-2xl font-bold mb-2 text-red-600">
+            {error ? 'Error Loading Class' : 'Class Not Found'}
+          </h2>
+          <p className="text-gray-500 mb-6">
+            {error instanceof Error ? error.message : 'The class does not exist.'}
           </p>
           <Button onClick={() => navigate('/classes')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -71,36 +74,41 @@ export default function ClassDetail() {
     );
   }
 
+  const handleDelete = () => {
+    if (classId) {
+      deleteClass.mutate(classId);
+      navigate('/classes');
+    }
+  };
+
+  // Safe options getter
+  const getOptions = (opts: unknown): string[] => {
+    if (Array.isArray(opts)) return opts;
+    return [];
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orchid-subtle to-white">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/classes')}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => navigate('/classes')} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Classes
           </Button>
 
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex items-start gap-4">
               <div
-                className="w-16 h-16 rounded-2xl shadow-lg flex items-center justify-center"
-                style={{ backgroundColor: classData.color }}
+                className="w-14 h-14 rounded-xl shadow flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: classData.color || '#DA70D6' }}
               >
-                <FileText className="w-8 h-8 text-white" />
+                <FileText className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-foreground mb-2">
-                  {classData.name}
-                </h1>
+                <h1 className="text-2xl sm:text-3xl font-bold">{classData.name}</h1>
                 {classData.description && (
-                  <p className="text-muted-foreground max-w-2xl">
-                    {classData.description}
-                  </p>
+                  <p className="text-gray-500 mt-1">{classData.description}</p>
                 )}
               </div>
             </div>
@@ -108,8 +116,8 @@ export default function ClassDetail() {
             <div className="flex gap-2">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="lg">
-                    <Trash2 className="mr-2 h-5 w-5" />
+                  <Button variant="outline">
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Delete
                   </Button>
                 </AlertDialogTrigger>
@@ -117,329 +125,159 @@ export default function ClassDetail() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Class</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete "{classData?.name}"? This will delete all materials, questions, and sessions for this class. This action cannot be undone.
+                      Delete "{classData.name}"? This cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        deleteClass.mutate(classId!);
-                        navigate('/classes');
-                      }}
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+
               <Button
-                size="lg"
-                className="bg-orchid-gradient hover:opacity-90 shadow-lg"
-                onClick={() => navigate(`/commute/${classId}`)}
-                disabled={!questions || questions.length === 0}
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={() => navigate(`/trip-setup/${classId}`)}
+                disabled={questionsList.length === 0}
               >
-                <Play className="mr-2 h-5 w-5" />
+                <Play className="mr-2 h-4 w-4" />
                 Start Learning
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Study Materials
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Materials
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {materials?.length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {materials?.length === 0
-                  ? 'No materials uploaded yet'
-                  : `File${materials?.length === 1 ? '' : 's'} uploaded`}
-              </p>
+              <p className="text-2xl font-bold">{materialsList.length}</p>
             </CardContent>
           </Card>
-
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Generated Questions
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                <Brain className="h-4 w-4" /> Questions
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {questions?.length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {questions?.length === 0
-                  ? 'Upload materials to generate questions'
-                  : `Question${questions?.length === 1 ? '' : 's'} ready`}
-              </p>
+              <p className="text-2xl font-bold">{questionsList.length}</p>
             </CardContent>
           </Card>
-
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Accuracy
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" /> Accuracy
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {accuracy !== null ? `${accuracy}%` : '-'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {accuracy !== null
-                  ? 'Overall performance'
-                  : 'Complete sessions to see stats'}
-              </p>
+              <p className="text-2xl font-bold">{accuracy !== null ? `${accuracy}%` : '-'}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Content Tabs */}
-        <Tabs defaultValue="materials" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+        {/* Tabs */}
+        <Tabs defaultValue="materials">
+          <TabsList className="mb-6">
             <TabsTrigger value="materials">Materials</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="materials" className="mt-6 space-y-6">
-            {/* File Upload */}
+          {/* Materials Tab */}
+          <TabsContent value="materials" className="space-y-6">
             {classId && <FileUpload classId={classId} />}
 
-            {/* Start Learning CTA */}
-            {questions && questions.length > 0 && (
-              <Card className="border-2 border-primary bg-gradient-to-br from-primary/5 to-transparent">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">Ready to Learn!</h3>
-                      <p className="text-muted-foreground">
-                        {questions.length} questions generated from your materials
-                      </p>
-                    </div>
-                    <Button
-                      size="lg"
-                      className="bg-orchid-gradient hover:opacity-90 shadow-lg"
-                      onClick={() => navigate(`/commute/${classId}`)}
-                    >
-                      <Play className="mr-2 h-5 w-5" />
-                      Start Learning
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Materials List */}
-            {materialsLoading ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading materials...</p>
-              </div>
-            ) : materials && materials.length > 0 ? (
+            {materialsList.length > 0 ? (
               <div className="space-y-3">
-                <h3 className="font-semibold text-foreground mb-3">
-                  Uploaded Materials ({materials.length})
-                </h3>
-                {materials.map((material) => (
-                  <MaterialCard key={material.id} material={material} />
+                <h3 className="font-semibold">Uploaded ({materialsList.length})</h3>
+                {materialsList.map((m) => (
+                  <MaterialCard key={m.id} material={m} />
                 ))}
               </div>
             ) : (
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-8">
-                    <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-medium mb-2">No materials uploaded yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Upload your first study material to get started
-                    </p>
-                  </div>
+                <CardContent className="py-8 text-center text-gray-500">
+                  No materials yet. Upload files above.
                 </CardContent>
               </Card>
             )}
           </TabsContent>
 
-          <TabsContent value="questions" className="mt-6">
-            {questions && questions.length > 0 ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-foreground">
-                    Generated Questions ({questions.length})
-                  </h3>
-                </div>
-                {questions.map((question, index) => (
-                  <Card key={question.id}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        Question {index + 1}: {question.question_text}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        {question.options.map((option, optIndex) => {
-                          const isCorrect = option === question.correct_answer;
-                          return (
-                            <div
-                              key={optIndex}
-                              className={`p-3 rounded-lg border ${
-                                isCorrect
-                                  ? 'bg-green-50 border-green-200'
-                                  : 'bg-muted/30 border-muted'
-                              }`}
-                            >
-                              <span className="font-medium mr-2">
-                                {String.fromCharCode(65 + optIndex)}.
-                              </span>
-                              <span>{option}</span>
-                              {isCorrect && (
-                                <span className="ml-2 text-green-600 text-sm font-medium">
-                                  ✓ Correct
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {question.explanation && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
-                          <p className="text-sm font-medium text-blue-900 mb-1">
-                            Explanation:
-                          </p>
-                          <p className="text-sm text-blue-800">{question.explanation}</p>
+          {/* Questions Tab */}
+          <TabsContent value="questions" className="space-y-4">
+            {questionsList.length > 0 ? (
+              questionsList.map((q, i) => (
+                <Card key={q.id}>
+                  <CardHeader>
+                    <CardTitle className="text-base">Q{i + 1}: {q.question_text}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {getOptions(q.options).map((opt, j) => (
+                        <div
+                          key={j}
+                          className={`p-2 rounded border ${
+                            opt === q.correct_answer ? 'bg-green-50 border-green-300' : 'bg-gray-50'
+                          }`}
+                        >
+                          {String.fromCharCode(65 + j)}. {opt}
+                          {opt === q.correct_answer && (
+                            <span className="ml-2 text-green-600 text-sm">Correct</span>
+                          )}
                         </div>
-                      )}
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
-                        <span className="capitalize">
-                          Difficulty: {question.difficulty}
-                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-gray-500">
+                  No questions yet. Upload materials to generate.
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Sessions Tab */}
+          <TabsContent value="sessions" className="space-y-4">
+            {sessionsList.length > 0 ? (
+              sessionsList.map((s) => {
+                const pct = s.questions_answered > 0
+                  ? Math.round((s.questions_correct / s.questions_answered) * 100)
+                  : 0;
+                return (
+                  <Card key={s.id}>
+                    <CardContent className="py-4 flex items-center gap-4">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${
+                          pct >= 80 ? 'bg-green-100' : pct >= 60 ? 'bg-yellow-100' : 'bg-red-100'
+                        }`}
+                      >
+                        {pct}%
+                      </div>
+                      <div>
+                        <p className="font-medium">{new Date(s.started_at).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">
+                          {s.questions_correct}/{s.questions_answered} correct
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                );
+              })
             ) : (
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Brain className="w-12 h-12 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">No questions yet</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      Questions will appear here after you upload study materials.
-                      AI will generate custom quiz questions based on your content.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="sessions" className="mt-6">
-            {sessions && sessions.length > 0 ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-foreground">
-                    Session History ({sessions.length})
-                  </h3>
-                </div>
-                {sessions.map((session) => {
-                  const percentage = session.questions_answered > 0
-                    ? Math.round((session.questions_correct / session.questions_answered) * 100)
-                    : 0;
-                  const sessionDate = new Date(session.started_at);
-
-                  return (
-                    <Card key={session.id}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                                percentage >= 80 ? 'bg-green-100' :
-                                percentage >= 60 ? 'bg-yellow-100' : 'bg-red-100'
-                              }`}>
-                                <span className="text-xl font-bold">
-                                  {percentage}%
-                                </span>
-                              </div>
-                              <div>
-                                <p className="font-medium">
-                                  {sessionDate.toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                  })}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {sessionDate.toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 mt-4">
-                              <div>
-                                <p className="text-xs text-muted-foreground">Questions</p>
-                                <p className="text-lg font-semibold">
-                                  {session.questions_answered}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Correct</p>
-                                <p className="text-lg font-semibold text-green-600">
-                                  {session.questions_correct}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Duration</p>
-                                <p className="text-lg font-semibold">
-                                  {session.duration_minutes} min
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          {session.completed && (
-                            <div className="ml-4">
-                              <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                                Completed
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Play className="w-12 h-12 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">No sessions yet</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      Your commute learning sessions will appear here with stats
-                      and progress tracking.
-                    </p>
-                  </div>
+                <CardContent className="py-8 text-center text-gray-500">
+                  No sessions yet. Start learning to track progress.
                 </CardContent>
               </Card>
             )}

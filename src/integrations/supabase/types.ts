@@ -7,80 +7,239 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   public: {
     Tables: {
-      lesson_modules: {
+      classes: {
         Row: {
-          content: string | null
-          created_at: string
           id: string
-          lesson_id: string
-          module_order: number
-          title: string
+          user_id: string
+          name: string
+          description: string | null
+          color: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          content?: string | null
-          created_at?: string
           id?: string
-          lesson_id: string
-          module_order?: number
-          title: string
+          user_id: string
+          name: string
+          description?: string | null
+          color?: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          content?: string | null
-          created_at?: string
           id?: string
-          lesson_id?: string
-          module_order?: number
+          user_id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      study_materials: {
+        Row: {
+          id: string
+          class_id: string
+          user_id: string
+          title: string
+          file_type: string
+          file_path: string
+          file_size: number | null
+          extracted_text: string | null
+          processing_status: string
+          processing_error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          class_id: string
+          user_id: string
+          title: string
+          file_type: string
+          file_path: string
+          file_size?: number | null
+          extracted_text?: string | null
+          processing_status?: string
+          processing_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          class_id?: string
+          user_id?: string
           title?: string
+          file_type?: string
+          file_path?: string
+          file_size?: number | null
+          extracted_text?: string | null
+          processing_status?: string
+          processing_error?: string | null
+          created_at?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "lesson_modules_lesson_id_fkey"
-            columns: ["lesson_id"]
+            foreignKeyName: "study_materials_class_id_fkey"
+            columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "lessons"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
-      lessons: {
+      generated_questions: {
         Row: {
-          created_at: string
-          description: string | null
           id: string
-          image_url: string | null
-          order_index: number
-          title: string
-          updated_at: string
+          class_id: string
+          study_material_id: string | null
+          user_id: string
+          question_text: string
+          options: Json
+          correct_answer: string
+          explanation: string | null
+          difficulty: string
+          question_order: number
+          created_at: string
         }
         Insert: {
-          created_at?: string
-          description?: string | null
           id?: string
-          image_url?: string | null
-          order_index?: number
-          title: string
-          updated_at?: string
+          class_id: string
+          study_material_id?: string | null
+          user_id: string
+          question_text: string
+          options?: Json
+          correct_answer: string
+          explanation?: string | null
+          difficulty?: string
+          question_order?: number
+          created_at?: string
         }
         Update: {
-          created_at?: string
-          description?: string | null
           id?: string
-          image_url?: string | null
-          order_index?: number
-          title?: string
-          updated_at?: string
+          class_id?: string
+          study_material_id?: string | null
+          user_id?: string
+          question_text?: string
+          options?: Json
+          correct_answer?: string
+          explanation?: string | null
+          difficulty?: string
+          question_order?: number
+          created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "generated_questions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_questions_study_material_id_fkey"
+            columns: ["study_material_id"]
+            isOneToOne: false
+            referencedRelation: "study_materials"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      commute_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          class_id: string
+          duration_minutes: number
+          started_at: string
+          ended_at: string | null
+          questions_answered: number
+          questions_correct: number
+          completed: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          class_id: string
+          duration_minutes: number
+          started_at?: string
+          ended_at?: string | null
+          questions_answered?: number
+          questions_correct?: number
+          completed?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          class_id?: string
+          duration_minutes?: number
+          started_at?: string
+          ended_at?: string | null
+          questions_answered?: number
+          questions_correct?: number
+          completed?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commute_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      session_responses: {
+        Row: {
+          id: string
+          session_id: string
+          question_id: string
+          user_answer: string
+          is_correct: boolean
+          response_time_seconds: number | null
+          answered_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          question_id: string
+          user_answer: string
+          is_correct: boolean
+          response_time_seconds?: number | null
+          answered_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          question_id?: string
+          user_answer?: string
+          is_correct?: boolean
+          response_time_seconds?: number | null
+          answered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "commute_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_responses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "generated_questions"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {
@@ -109,192 +268,15 @@ export type Database = {
         }
         Relationships: []
       }
-      quiz_attempts: {
-        Row: {
-          created_at: string
-          id: string
-          quiz_id: string
-          score: number
-          submitted_at: string
-          total_questions: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          quiz_id: string
-          score?: number
-          submitted_at?: string
-          total_questions?: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          quiz_id?: string
-          score?: number
-          submitted_at?: string
-          total_questions?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_attempts_quiz_id_fkey"
-            columns: ["quiz_id"]
-            isOneToOne: false
-            referencedRelation: "quizzes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quiz_questions: {
-        Row: {
-          correct_answer: string
-          created_at: string
-          id: string
-          options: Json
-          question_order: number
-          question_text: string
-          quiz_id: string
-        }
-        Insert: {
-          correct_answer: string
-          created_at?: string
-          id?: string
-          options?: Json
-          question_order?: number
-          question_text: string
-          quiz_id: string
-        }
-        Update: {
-          correct_answer?: string
-          created_at?: string
-          id?: string
-          options?: Json
-          question_order?: number
-          question_text?: string
-          quiz_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_questions_quiz_id_fkey"
-            columns: ["quiz_id"]
-            isOneToOne: false
-            referencedRelation: "quizzes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quizzes: {
-        Row: {
-          created_at: string
-          id: string
-          lesson_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          lesson_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          lesson_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quizzes_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_progress: {
-        Row: {
-          completed_at: string
-          created_at: string
-          id: string
-          lesson_id: string
-          module_id: string | null
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string
-          created_at?: string
-          id?: string
-          lesson_id: string
-          module_id?: string | null
-          user_id: string
-        }
-        Update: {
-          completed_at?: string
-          created_at?: string
-          id?: string
-          lesson_id?: string
-          module_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_progress_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_progress_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "lesson_modules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -302,25 +284,23 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -338,16 +318,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -363,16 +343,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -388,16 +368,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -405,24 +385,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      app_role: ["admin", "user"],
-    },
-  },
-} as const
