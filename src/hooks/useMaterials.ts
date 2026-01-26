@@ -160,6 +160,17 @@ export const useDeleteMaterial = () => {
 
   return useMutation({
     mutationFn: async (material: StudyMaterial) => {
+      // First, delete all associated questions
+      const { error: questionsError } = await (supabase as any)
+        .from('generated_questions')
+        .delete()
+        .eq('study_material_id', material.id);
+
+      if (questionsError) {
+        console.error('Failed to delete questions:', questionsError);
+        // Continue anyway - questions might not exist
+      }
+
       // Delete file from storage
       const { error: storageError } = await supabase.storage
         .from('study-materials')
@@ -179,9 +190,10 @@ export const useDeleteMaterial = () => {
     },
     onSuccess: (material) => {
       queryClient.invalidateQueries({ queryKey: ['materials', material.class_id] });
+      queryClient.invalidateQueries({ queryKey: ['questions', material.class_id] });
       toast({
         title: 'Material deleted',
-        description: 'Your study material has been deleted successfully.',
+        description: 'Your study material and associated questions have been deleted.',
       });
     },
     onError: (error: Error) => {

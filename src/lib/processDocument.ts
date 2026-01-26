@@ -80,8 +80,7 @@ export async function processDocument(materialId: string): Promise<void> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.1',
-        max_tokens: 4096,
+        model: 'gpt-4o',
         temperature: 0.7,
         messages: [
           {
