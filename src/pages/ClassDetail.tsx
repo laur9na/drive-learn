@@ -139,7 +139,7 @@ export default function ClassDetail() {
 
               <Button
                 className="bg-purple-600 hover:bg-purple-700"
-                onClick={() => navigate(`/trip-setup/${classId}`)}
+                onClick={() => navigate(`/commute/${classId}`)}
                 disabled={questionsList.length === 0}
               >
                 <Play className="mr-2 h-4 w-4" />

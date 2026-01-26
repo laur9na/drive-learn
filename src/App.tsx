@@ -11,9 +11,7 @@ import Signup from "./pages/Signup";
 import Classes from "./pages/Classes";
 import ClassDetail from "./pages/ClassDetail";
 import CommuteSession from "./pages/CommuteSession";
-import TripSetup from "./pages/TripSetup";
 import NotFound from "./pages/NotFound";
-import { DrivingQuizDemo } from "./components/DrivingQuizDemo";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +24,6 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Welcome />} />
-            <Route path="/demo" element={<DrivingQuizDemo />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route
@@ -42,14 +39,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ClassDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/trip-setup/:classId"
-              element={
-                <ProtectedRoute>
-                  <TripSetup />
                 </ProtectedRoute>
               }
             />
