@@ -1,73 +1,66 @@
-# Welcome to your Lovable project
+# DriveLearn
 
-## Project info
+DriveLearn is a mobile-first learning app designed for hands-free, voice-driven learning during commutes.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Project Structure
 
-## How can I edit this code?
+This monorepo contains two main components:
 
-There are several ways of editing your application.
+### 1. Mobile App (`/mobile`)
+- Built with **Expo SDK 54** and **React Native**
+- Voice-first learning interface
+- Supabase backend for auth, storage, and data
+- Supports iOS and Android
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+**Run the mobile app:**
+```bash
+cd mobile
+yarn install
+npx expo start
 ```
 
-**Edit a file directly in GitHub**
+### 2. Landing Page (`/website`)
+- Built with **Next.js**
+- Marketing website for app downloads
+- Deployed to Vercel
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+**Run the landing page:**
+```bash
+cd website
+pnpm install
+pnpm dev
+```
 
-**Use GitHub Codespaces**
+## Key Features
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Voice-driven question/answer sessions
+- Topic-based learning (not classes)
+- Content from PDFs, images, text, or YouTube transcripts
+- Spaced repetition algorithm
+- T-shaped knowledge progress visualization
 
-## What technologies are used for this project?
+## Tech Stack
 
-This project is built with:
+- **Mobile**: Expo 54, React Native, Supabase
+- **Website**: Next.js, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **Voice**: Speech-to-text, Text-to-speech
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Development Guidelines
 
-## How can I deploy this project?
+- Use **Yarn only** for mobile (not npm)
+- Keep UX minimal and voice-first
+- One primary action per screen
+- See [CLAUDE.md](./CLAUDE.md) for detailed instructions
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Environment Variables
 
-## Can I connect a custom domain to my Lovable project?
+Copy `.env.example` to `.env` in the mobile directory and add your Supabase credentials:
+```
+EXPO_PUBLIC_SUPABASE_URL=your-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-key
+```
 
-Yes, you can!
+## Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This is a private project. For questions, contact the maintainer.

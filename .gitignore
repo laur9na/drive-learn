@@ -13,8 +13,14 @@ dist-ssr
 dist-electron
 *.local
 
+# Next.js
+.next/
+out/
+build/
+
 # Environment variables
 .env
+.env*.local
 
 # Editor directories and files
 .vscode/*
@@ -26,3 +32,12 @@ dist-electron
 *.njsproj
 *.sln
 *.sw?
+
+# Expo
+.expo/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision

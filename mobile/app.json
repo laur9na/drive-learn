@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Drive Learn",
-    "slug": "drive-learn",
+    "slug": "drivelearn",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "drivelearn",
@@ -11,7 +11,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.drivelearn.app"
+      "bundleIdentifier": "com.drivelearn.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.drivelearn.app",
@@ -25,6 +28,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "7799801f-80fd-46e3-956b-36a5f16bcdc0"
+      }
+    },
+    "owner": "laurenas-organization"
   }
 }
